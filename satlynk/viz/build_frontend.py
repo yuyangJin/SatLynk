@@ -165,8 +165,8 @@ html, body {{ background: #0a0e1a; color: #e2e8f0; font-family: -apple-system, B
 <script type="importmap">
 {{
   "imports": {{
-    "three": "./three.module.js",
-    "three/addons/": "./jsm/"
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
   }}
 }}
 </script>
