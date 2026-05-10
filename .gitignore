@@ -22,3 +22,4 @@ viz/*_export_pretty.json
 # OS
 .DS_Store
 Thumbs.db
+satlynk/viz/*_export*.json
