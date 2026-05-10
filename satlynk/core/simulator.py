@@ -417,16 +417,24 @@ class Simulator:
                    (transfer.src_node == dst and transfer.dst_node == src):
                     transfer.state = TransferState.IN_PROGRESS
                     transfer.start_time = event.time
+                    # Activate comm power components
+                    self.energy.activate_component(
+                        transfer.src_node, f"tx_{tid}", PowerComponent.COMM_TX)
+                    self.energy.activate_component(
+                        transfer.dst_node, f"rx_{tid}", PowerComponent.COMM_RX)
 
     def _on_link_down(self, event: Event):
         """Link went down — stall any transfers on this link."""
         src = event.payload['src']
         dst = event.payload['dst']
-        for transfer in self._active_transfers.values():
+        for tid, transfer in list(self._active_transfers.items()):
             if transfer.state == TransferState.IN_PROGRESS:
                 if (transfer.src_node == src and transfer.dst_node == dst) or \
                    (transfer.src_node == dst and transfer.dst_node == src):
                     transfer.state = TransferState.QUEUED
+                    # Deactivate comm power while stalled
+                    self.energy.deactivate_component(transfer.src_node, f"tx_{tid}")
+                    self.energy.deactivate_component(transfer.dst_node, f"rx_{tid}")
 
     def _on_transfer_done(self, event: Event):
         """A data transfer completed."""
@@ -438,6 +446,10 @@ class Simulator:
         t = event.time
         self.metrics.record_transfer(transfer.src_node, transfer.dst_node,
                                      transfer.size_bytes, t)
+
+        # Deactivate comm power components
+        self.energy.deactivate_component(transfer.src_node, f"tx_{tid}")
+        self.energy.deactivate_component(transfer.dst_node, f"rx_{tid}")
 
         # Viz: record transfer end
         if self.viz:
@@ -644,7 +656,8 @@ class Simulator:
             start_time=t,
         )
         self._active_computes[job_id] = job
-        self.energy.add_load(node_id, self.config.compute_power_w)
+        # Activate compute power component
+        self.energy.activate_component(node_id, f"compute_{job_id}", PowerComponent.COMPUTE)
 
         # Viz: record compute start
         if self.viz:
