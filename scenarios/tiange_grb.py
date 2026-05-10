@@ -154,7 +154,7 @@ def create_grb_task(task_id: str, source_node: int, arrival_time: float,
 def run_tiange_scenario():
     """运行天格 GRB 场景仿真。"""
     print("=" * 70)
-    print("OASIS — 天格计划 × 天基计算卫星：GRB 在轨推理场景")
+    print("SatLynk — 天格计划 × 天基计算卫星：GRB 在轨推理场景")
     print("=" * 70)
 
     # --- 场景参数 ---

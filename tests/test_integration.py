@@ -19,7 +19,7 @@ def test_toy_case_full_sim():
     Expected: Task completes with makespan ≈ 40.8s via relay D→A→B→D.
     """
     print("=" * 60)
-    print("OASIS Full Simulator — Toy Case Integration Test")
+    print("SatLynk Full Simulator — Toy Case Integration Test")
     print("=" * 60)
 
     # --- Config ---

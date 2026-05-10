@@ -167,7 +167,7 @@ def solve_toy_case_optimal() -> SimState:
 
 def run_toy_case_simulation() -> SimState:
     """
-    Run the toy case through the OASIS simulator.
+    Run the toy case through the SatLynk simulator.
     Verifies that the simulator produces the same result as analytical solution.
     """
     contact_plan = create_toy_contact_plan()
@@ -280,7 +280,7 @@ def run_toy_case_simulation() -> SimState:
 def verify_toy_case():
     """Run both analytical and simulation, compare results."""
     print("=" * 60)
-    print("OASIS Toy Case Verification: 3-Satellite Relay")
+    print("SatLynk Toy Case Verification: 3-Satellite Relay")
     print("=" * 60)
     
     # Analytical solution

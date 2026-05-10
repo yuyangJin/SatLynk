@@ -1,7 +1,7 @@
 [project]
-name = "oasis"
+name = "satlynk"
 version = "0.1.0"
-description = "Orbital Agent Scheduling & Inference Simulator"
+description = "SatLynk — LEO Satellite Constellation Task Scheduling Simulator"
 requires-python = ">=3.11"
 dependencies = [
     "numpy>=1.24",
@@ -27,7 +27,7 @@ viz = [
     "matplotlib>=3.7",
     "plotly>=5.15",
 ]
-all = ["oasis[dev,solver,orbit,viz,rl]"]
+all = ["satlynk[dev,solver,orbit,viz,rl]"]
 
 [build-system]
 requires = ["setuptools>=68"]

@@ -1,6 +1,8 @@
-"""OASIS — Orbital Agent Scheduling & Inference Simulator
+"""SatLynk — LEO Satellite Constellation Task Scheduling Simulator
 
-Phase 1 MVP: DES Core + Orbital + Contact Plan + Toy Case Verification
+A discrete-event simulator for space-based AI agent task scheduling,
+focusing on the interplay between orbital dynamics, communication windows,
+energy constraints, and computational resource allocation.
 """
 
 __version__ = "0.1.0"

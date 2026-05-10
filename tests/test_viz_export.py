@@ -13,7 +13,7 @@ from oasis.task.dag import TaskDAG, SubTask
 def test_viz_export():
     """Run toy case, export viz JSON, verify structure."""
     print("=" * 60)
-    print("OASIS Viz Export Test")
+    print("SatLynk Viz Export Test")
     print("=" * 60)
 
     # --- Setup (same as integration test) ---

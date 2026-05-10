@@ -18,7 +18,7 @@ def test_phase2():
     3. Weight cache: tasks requiring models wait for weight transfer
     """
     print("=" * 60)
-    print("OASIS Phase 2 Integration Test")
+    print("SatLynk Phase 2 Integration Test")
     print("=" * 60)
 
     config = SimConfig(

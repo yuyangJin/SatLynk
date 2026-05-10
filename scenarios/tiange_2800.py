@@ -80,7 +80,7 @@ def create_full_constellation():
 
 def run_2800sat_scenario():
     print("=" * 70)
-    print("OASIS — 天格 × 三体计算星座 (2800星) 全规模场景")
+    print("SatLynk — 天格 × 三体计算星座 (2800星) 全规模场景")
     print("=" * 70)
 
     t0 = walltime.time()

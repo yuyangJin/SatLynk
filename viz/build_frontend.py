@@ -1,4 +1,4 @@
-"""Generate the OASIS 3D visualization HTML file — responsive (desktop + mobile landscape)."""
+"""Generate the SatLynk 3D visualization HTML file — responsive (desktop + mobile landscape)."""
 
 import json
 import sys
@@ -16,7 +16,7 @@ def generate_html(sim_data_path: str, output_path: str):
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>OASIS — Simulation Playback</title>
+<title>SatLynk — Simulation Playback</title>
 <style>
 * {{ margin: 0; padding: 0; box-sizing: border-box; }}
 html, body {{ background: #0a0e1a; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; overflow: hidden; height: 100%; width: 100%; touch-action: none; }}

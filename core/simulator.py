@@ -91,7 +91,7 @@ class SimConfig:
 
 class Simulator:
     """
-    Main OASIS simulator — integrates DES engine, orbital mechanics,
+    Main SatLynk simulator — integrates DES engine, orbital mechanics,
     contact plan, task management, scheduling, and energy.
     """
 

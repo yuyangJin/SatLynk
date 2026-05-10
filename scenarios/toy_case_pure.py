@@ -19,7 +19,7 @@ def verify_toy_case():
         L_DB: [40, 60]
     """
     print("=" * 60)
-    print("OASIS Toy Case Verification: 3-Satellite Relay")
+    print("SatLynk Toy Case Verification: 3-Satellite Relay")
     print("=" * 60)
     
     # Parameters

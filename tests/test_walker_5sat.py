@@ -23,7 +23,7 @@ def test_walker_5sat():
     3. Tasks get scheduled and completed
     """
     print("=" * 60)
-    print("OASIS — 5-Satellite Walker Scenario")
+    print("SatLynk — 5-Satellite Walker Scenario")
     print("=" * 60)
 
     # --- Config ---

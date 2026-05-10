@@ -1,7 +1,7 @@
 """Visualization data exporter — Converts simulation state to JSON for 3D playback.
 
 Captures positions, events, transfers, energy, and compute jobs during simulation,
-then exports as the JSON format expected by the OASIS Viz frontend.
+then exports as the JSON format expected by the SatLynk Viz frontend.
 """
 
 from __future__ import annotations
