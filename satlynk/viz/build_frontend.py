@@ -220,8 +220,6 @@ setTimeout(resize, 100);
 const textureLoader = new THREE.TextureLoader();
 const earthDayTex = textureLoader.load('https://unpkg.com/three-globe@2.31.1/example/img/earth-blue-marble.jpg');
 const earthNightTex = textureLoader.load('https://unpkg.com/three-globe@2.31.1/example/img/earth-night.jpg');
-earthDayTex.colorSpace = THREE.SRGBColorSpace;
-earthNightTex.colorSpace = THREE.SRGBColorSpace;
 
 // --- Smooth Earth (default) ---
 const earthGeo = new THREE.SphereGeometry(R, 48, 48);
