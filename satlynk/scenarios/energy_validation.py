@@ -77,10 +77,10 @@ def create_grb_task(task_id: str, source_node: int, arrival_time: float) -> Task
         dependencies=[],
         source_node=source_node,
         arrival_time_s=arrival_time,
-        input_size_bytes=int(500e3),
         result_size_bytes=int(50e3),
         global_deadline_s=120.0,
     )
+    task.input_size_bytes = 500_000  # 500 KB
     return task
 
 
@@ -108,8 +108,9 @@ def run_energy_validation():
     sim.set_scheduler(NearestFirstScheduler())
     sim.precompute_orbits()
 
-    # Pre-cache weights on first two compute stars
-    for i in range(len(tiange_sats), len(tiange_sats) + 2):
+    # Pre-cache weights on all compute stars (so we focus on energy, not weight logistics)
+    sim.weight_mgr.register_model("grb_2b", int(4e9))
+    for i in range(len(tiange_sats), len(all_sats)):
         sim.weight_mgr.cache_weight(i, "grb_2b", 0.0)
 
     # --- Print eclipse schedule ---
