@@ -30,7 +30,9 @@ from satlynk.scheduler.interface import (
     Scheduler, NearestFirstScheduler, Schedule, TaskAssignment,
     EnvSnapshot, NodeSnapshot,
 )
-from satlynk.energy.battery import EnergyModel, PowerMode
+from satlynk.energy.battery import (
+    EnergyModel, PowerMode, PowerComponent, PowerProfile,
+)
 from satlynk.metrics.collector import MetricsCollector, TaskResult, SimMetrics
 from satlynk.viz.exporter import VizRecorder
 
@@ -164,14 +166,34 @@ class Simulator:
         self.energy = EnergyModel(len(satellites))
         for i, sat in enumerate(satellites):
             if sat.role in (Role.COMPUTE, Role.HYBRID):
-                self.energy.init_node(i, sat.power_solar_w, sat.battery_capacity_wh)
-                self.energy.set_load(i, self.config.idle_power_w)
-                # Init weight cache (use half storage for weights)
+                # Compute satellite power profile
+                profile = PowerProfile(
+                    base_w=self.config.idle_power_w,
+                    detector_w=0.0,
+                    comm_tx_w=self.config.comm_power_w,
+                    comm_rx_w=self.config.comm_power_w * 0.4,
+                    compute_w=self.config.compute_power_w,
+                    heater_w=1.0,
+                )
+                self.energy.init_node(i, sat.power_solar_w, sat.battery_capacity_wh,
+                                      power_profile=profile)
+                # Init weight cache (use 75% storage for weights)
                 cache_bytes = int(sat.storage_bytes * 0.75) if sat.storage_bytes > 0 else int(48e9)
                 self.weight_mgr.init_node(i, cache_bytes)
             elif sat.role == Role.DETECTOR:
-                self.energy.init_node(i, sat.power_solar_w, sat.battery_capacity_wh)
-                self.energy.set_load(i, self.config.idle_power_w * 0.5)
+                # Detector satellite power profile
+                profile = PowerProfile(
+                    base_w=self.config.idle_power_w * 0.5,
+                    detector_w=3.0,  # Sensor payload always on
+                    comm_tx_w=self.config.comm_power_w,
+                    comm_rx_w=self.config.comm_power_w * 0.4,
+                    compute_w=self.config.compute_power_w,
+                    heater_w=0.5,
+                )
+                self.energy.init_node(i, sat.power_solar_w, sat.battery_capacity_wh,
+                                      power_profile=profile)
+                # Detector payload is always active
+                self.energy.activate_component(i, "payload_sensor", PowerComponent.DETECTOR)
 
     def set_contact_plan(self, plan: ContactPlan):
         """Set a precomputed contact plan (or use compute_contact_plan)."""
@@ -290,11 +312,6 @@ class Simulator:
                         payload={'transfer_id': tid},
                     ))
 
-        # Energy: communication load
-        for transfer in self._active_transfers.values():
-            if transfer.state == TransferState.IN_PROGRESS:
-                self.energy.add_load(transfer.src_node, self.config.comm_power_w * dt / dt)
-
     def _step_computes(self, t: float, dt: float):
         """Advance all active computations by dt."""
         completed = []
@@ -318,7 +335,8 @@ class Simulator:
         # Remove completed
         for cid in completed:
             job = self._active_computes.pop(cid)
-            self.energy.add_load(job.node_id, -self.config.compute_power_w)
+            # Deactivate compute power component
+            self.energy.deactivate_component(job.node_id, f"compute_{cid}")
 
     def _step_energy(self, t: float, dt: float):
         """Update energy model."""
@@ -568,6 +586,9 @@ class Simulator:
         if window and window.is_active(t):
             transfer.state = TransferState.IN_PROGRESS
             transfer.start_time = t
+            # Activate comm power components
+            self.energy.activate_component(src, f"tx_{tid}", PowerComponent.COMM_TX)
+            self.energy.activate_component(dst, f"rx_{tid}", PowerComponent.COMM_RX)
         else:
             transfer.state = TransferState.QUEUED
 
