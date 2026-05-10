@@ -297,7 +297,7 @@ const terrainMat = new THREE.ShaderMaterial({{
   uniforms: {{
     uDayMap: {{ value: earthDayTex }},
     uNightMap: {{ value: earthNightTex }},
-    uSunDir: {{ value: new THREE.Vector3(1, 0.3, 0.5).normalize() }}
+    uSunDir: {{ value: new THREE.Vector3(0, 0.3, 1).normalize() }}
   }}
 }});
 const earthTerrain = new THREE.Mesh(new THREE.SphereGeometry(R, 64, 64), terrainMat);
@@ -504,7 +504,7 @@ function getSatPos(idx, t) {{
 function updateScene(t) {{
   // Update sun direction (simulate Earth rotation ~1 rev per orbit period ~5400s)
   const sunAngle = (t / duration) * Math.PI * 2;
-  const sunDir = new THREE.Vector3(Math.cos(sunAngle), 0.3, Math.sin(sunAngle)).normalize();
+  const sunDir = new THREE.Vector3(Math.sin(sunAngle), 0.3, Math.cos(sunAngle)).normalize();
   terrainMat.uniforms.uSunDir.value.copy(sunDir);
   sun.position.copy(sunDir.clone().multiplyScalar(20));
 
