@@ -254,11 +254,12 @@ varying vec3 vPosition;
 varying vec2 vUv;
 
 void main() {{
-  vec3 normal = normalize(vNormal);
+  // Use world-space normal (for a sphere at origin, it's just normalize(position))
+  vec3 worldNormal = normalize(vPosition);
   vec3 sunDir = normalize(uSunDir);
   
-  // Day/night factor based on dot(normal, sunDir)
-  float NdotL = dot(normal, sunDir);
+  // Day/night factor based on dot(worldNormal, sunDir)
+  float NdotL = dot(worldNormal, sunDir);
   // Smooth terminator: transition over [-0.1, 0.2] range
   float dayFactor = smoothstep(-0.1, 0.2, NdotL);
   
@@ -268,10 +269,10 @@ void main() {{
   
   // Lighting for day side
   float diffuse = max(NdotL, 0.0);
-  vec3 litDay = dayColor * (0.3 + 0.7 * diffuse);
+  vec3 litDay = dayColor * (0.35 + 0.65 * diffuse);
   
-  // Night side: show city lights, slightly dimmed
-  vec3 litNight = nightColor * 1.2;
+  // Night side: city lights + slight ambient so it's not pure black
+  vec3 litNight = nightColor * 1.5 + vec3(0.03, 0.04, 0.06);
   
   // Blend day and night
   vec3 col = mix(litNight, litDay, dayFactor);
