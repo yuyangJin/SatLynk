@@ -94,6 +94,8 @@ html, body {{ background: #0a0e1a; color: #e2e8f0; font-family: -apple-system, B
 #rotate-prompt {{ display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #0a0e1a; z-index: 9999; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }}
 #rotate-prompt svg {{ width: 48px; height: 48px; color: #6b7280; }}
 #rotate-prompt p {{ color: #9ca3af; font-size: 14px; }}
+
+.sat-label {{ color: #e2e8f0; font-size: 9px; font-family: monospace; background: rgba(0,0,0,0.5); padding: 1px 4px; border-radius: 2px; white-space: nowrap; pointer-events: none; margin-top: -20px; }}
 </style>
 </head>
 <body>
@@ -174,6 +176,7 @@ html, body {{ background: #0a0e1a; color: #e2e8f0; font-family: -apple-system, B
 <script type="module">
 import * as THREE from 'three';
 import {{ OrbitControls }} from 'three/addons/controls/OrbitControls.js';
+import {{ CSS2DRenderer, CSS2DObject }} from 'three/addons/renderers/CSS2DRenderer.js';
 
 const SIM = {sim_json};
 
@@ -198,6 +201,14 @@ const renderer = new THREE.WebGLRenderer({{ antialias: true, alpha: true }});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 container.appendChild(renderer.domElement);
 
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(container.clientWidth, container.clientHeight);
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.top = '0';
+labelRenderer.domElement.style.left = '0';
+labelRenderer.domElement.style.pointerEvents = 'none';
+container.appendChild(labelRenderer.domElement);
+
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
@@ -211,6 +222,7 @@ function resize() {{
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
   renderer.setSize(w, h);
+  labelRenderer.setSize(w, h);
 }}
 resize();
 window.addEventListener('resize', resize);
@@ -256,20 +268,19 @@ void main() {{
   vec3 worldNormal = normalize(vPosition);
   vec3 sunDir = normalize(uSunDir);
   
-  // Day/night factor based on dot(worldNormal, sunDir)
+  // Day/night factor — natural terminator transition
   float NdotL = dot(worldNormal, sunDir);
-  // Smooth terminator: transition over [-0.1, 0.2] range
   float dayFactor = smoothstep(-0.15, 0.15, NdotL);
   
   // Sample textures
   vec3 dayColor = texture2D(uDayMap, vUv).rgb;
   vec3 nightColor = texture2D(uNightMap, vUv).rgb;
   
-  // Lighting for day side
+  // Lighting for day side — full brightness
   float diffuse = max(NdotL, 0.0);
   vec3 litDay = dayColor;
   
-  // Night side: city lights + slight ambient so it's not pure black
+  // Night side: pure black + faint city lights only
   vec3 litNight = nightColor * 0.6;
   
   // Blend day and night
@@ -363,6 +374,15 @@ SIM.satellites.forEach((sat, i) => {{
   ring.lookAt(camera.position); // will be updated each frame
   mesh.add(ring);
   selectRings.push(ring);
+  
+  // Name label
+  const labelDiv = document.createElement('div');
+  labelDiv.className = 'sat-label';
+  labelDiv.textContent = sat.id;
+  labelDiv.style.color = sat.color;
+  const label = new CSS2DObject(labelDiv);
+  label.position.set(0, size * 2.5, 0);
+  mesh.add(label);
   
   // Orbit path
   const pts = computeOrbitPath(sat.orbit, 80);
@@ -500,7 +520,7 @@ function getSatPos(idx, t) {{
 }}
 
 function updateScene(t) {{
-  // Update sun direction (simulate Earth rotation ~1 rev per orbit period ~5400s)
+  // Update sun direction (rotate around Y over sim duration)
   const sunAngle = (t / duration) * Math.PI * 2;
   const sunDir = new THREE.Vector3(Math.sin(sunAngle), 0.3, Math.cos(sunAngle)).normalize();
   terrainMat.uniforms.uSunDir.value.copy(sunDir);
@@ -738,6 +758,7 @@ function animate() {{
   updateScene(currentTime);
   if (cameraMode !== 'track') controls.update();
   renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
 }}
 animate();
 updateUI();
