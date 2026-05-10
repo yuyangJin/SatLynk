@@ -687,7 +687,7 @@ window.togglePlay = function() {{
   const btn = document.getElementById('play-btn');
   btn.textContent = playing ? '⏸' : '▶';
   btn.classList.toggle('playing', playing);
-  if (cameraMode === 'fixed') controls.enabled = !playing;
+  if (cameraMode === 'fixed') controls.enableRotate = !playing;
 }};
 window.skipToStart = () => {{ currentTime = 0; updateUI(); }};
 window.skipToEnd = () => {{ currentTime = duration; updateUI(); }};
@@ -700,9 +700,19 @@ document.querySelectorAll('#camera-mode button').forEach(btn => {{
     cameraMode = btn.dataset.mode;
     document.querySelectorAll('#camera-mode button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    controls.enabled = (cameraMode === 'free') || (cameraMode === 'fixed' && !playing);
-    if (cameraMode === 'track') {{
-      controls.enabled = false;
+    if (cameraMode === 'free') {{
+      controls.enabled = true;
+      controls.enableRotate = true;
+      controls.enableZoom = true;
+    }} else if (cameraMode === 'fixed') {{
+      controls.enabled = true;
+      controls.enableRotate = !playing;
+      controls.enableZoom = true;
+    }} else if (cameraMode === 'track') {{
+      controls.enabled = true;
+      controls.enableRotate = false;
+      controls.enableZoom = true;
+      controls.enablePan = false;
       trackTarget = selectedSat >= 0 ? selectedSat : 0;
     }}
   }});
