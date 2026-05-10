@@ -261,7 +261,7 @@ void main() {{
   // Day/night factor based on dot(worldNormal, sunDir)
   float NdotL = dot(worldNormal, sunDir);
   // Smooth terminator: transition over [-0.1, 0.2] range
-  float dayFactor = smoothstep(-0.1, 0.2, NdotL);
+  float dayFactor = smoothstep(-0.3, 0.1, NdotL);
   
   // Sample textures
   vec3 dayColor = texture2D(uDayMap, vUv).rgb;
@@ -269,7 +269,7 @@ void main() {{
   
   // Lighting for day side
   float diffuse = max(NdotL, 0.0);
-  vec3 litDay = dayColor * (0.6 + 0.4 * diffuse);
+  vec3 litDay = dayColor * (0.7 + 0.3 * diffuse);
   
   // Night side: city lights + slight ambient so it's not pure black
   vec3 litNight = nightColor * 2.5 + vec3(0.08, 0.10, 0.18);

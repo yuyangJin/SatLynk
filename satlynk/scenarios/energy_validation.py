@@ -67,7 +67,7 @@ def create_grb_task(task_id: str, source_node: int, arrival_time: float) -> Task
     """Single-subtask GRB inference task."""
     subtask = SubTask(
         id=f"{task_id}_infer",
-        compute_flops=4e9,
+        compute_flops=10e12,           # 10 TFLOP — 10s on 1 TFLOPS node
         required_model="grb_2b",
         model_size_bytes=int(4e9),
     )
