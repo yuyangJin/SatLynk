@@ -1,7 +1,6 @@
 """Test viz export — Run toy case and export JSON for visualization."""
 
 import sys
-sys.path.insert(0, '/workspace')
 
 import json
 from satlynk.core.simulator import Simulator, SimConfig

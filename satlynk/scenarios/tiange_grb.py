@@ -40,7 +40,6 @@
 """
 
 import sys
-sys.path.insert(0, '/workspace')
 
 import numpy as np
 from satlynk.core.simulator import Simulator, SimConfig
@@ -318,9 +317,11 @@ def run_tiange_scenario():
 
     # --- 输出可视化数据 ---
     if sim.viz:
-        export_path = "/workspace/oasis/viz/tiange_grb_export.json"
-        sim.viz.export_to_file(export_path)
         import os
+        output_dir = os.path.join(os.getcwd(), "output")
+        os.makedirs(output_dir, exist_ok=True)
+        export_path = os.path.join(output_dir, "tiange_grb_export.json")
+        sim.viz.export_to_file(export_path)
         fsize = os.path.getsize(export_path)
         print(f"\n[可视化数据]")
         print(f"  输出: {export_path}")

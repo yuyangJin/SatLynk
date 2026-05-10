@@ -1,7 +1,6 @@
 """5-satellite Walker scenario — validates orbital propagation + auto contact plan."""
 
 import sys
-sys.path.insert(0, '/workspace')
 
 import numpy as np
 from satlynk.core.simulator import Simulator, SimConfig

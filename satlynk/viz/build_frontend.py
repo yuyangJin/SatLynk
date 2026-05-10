@@ -2,7 +2,6 @@
 
 import json
 import sys
-sys.path.insert(0, '/workspace')
 
 
 def generate_html(sim_data_path: str, output_path: str):

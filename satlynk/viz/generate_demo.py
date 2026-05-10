@@ -1,7 +1,6 @@
 """Generate viz export with real orbital positions for the 3D frontend."""
 
 import sys
-sys.path.insert(0, '/workspace')
 
 import numpy as np
 from satlynk.core.simulator import Simulator, SimConfig

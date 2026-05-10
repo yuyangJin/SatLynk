@@ -12,7 +12,6 @@
 """
 
 import sys
-sys.path.insert(0, '/workspace')
 
 import numpy as np
 import time as walltime
@@ -224,9 +223,11 @@ def run_2800sat_scenario():
         print(f"  → 星座密度是解决时空可达性的根本途径")
 
     # --- 导出 viz ---
-    export_path = "/workspace/oasis/viz/tiange_2800_export.json"
-    sim.viz.export_to_file(export_path)
     import os
+    output_dir = os.path.join(os.getcwd(), "output")
+    os.makedirs(output_dir, exist_ok=True)
+    export_path = os.path.join(output_dir, "tiange_2800_export.json")
+    sim.viz.export_to_file(export_path)
     print(f"\n[Viz] {export_path} ({os.path.getsize(export_path)/1024/1024:.1f} MB)")
 
     return metrics, contact_plan

@@ -5,7 +5,6 @@
 """
 
 import sys, json, os
-sys.path.insert(0, '/workspace')
 
 import numpy as np
 from satlynk.core.simulator import Simulator, SimConfig
@@ -156,7 +155,9 @@ def build_tiange_viz():
           f"success={metrics.success_rate:.0%}")
 
     # --- Export ---
-    export_path = "/workspace/oasis/viz/tiange_viz_export.json"
+    output_dir = os.path.join(os.getcwd(), "output")
+    os.makedirs(output_dir, exist_ok=True)
+    export_path = os.path.join(output_dir, "tiange_viz_export.json")
     viz.export_to_file(export_path)
     fsize = os.path.getsize(export_path)
     print(f"  Viz export: {fsize/1024:.0f} KB")
@@ -168,10 +169,12 @@ def main():
     from satlynk.viz.build_frontend import generate_html
     
     export_path = build_tiange_viz()
-    output_path = "/workspace/site/index.html"
+    output_dir = os.path.join(os.getcwd(), "output")
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, "index.html")
     generate_html(export_path, output_path)
     print(f"\n[Done] Frontend: {output_path}")
-    print(f"  URL: https://s-thu-tiange.nia-sandbox-proxy.bc-inner.com/")
+    print(f"  Open in browser: file://{output_path}")
 
 
 if __name__ == "__main__":

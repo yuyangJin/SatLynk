@@ -1,7 +1,6 @@
 """Integration test — Run the toy case through the full Simulator."""
 
 import sys
-sys.path.insert(0, '/workspace')
 
 import numpy as np
 from satlynk.core.simulator import Simulator, SimConfig

@@ -1,7 +1,6 @@
 """Generate 50-satellite scenario for visualization."""
 
 import sys
-sys.path.insert(0, '/workspace')
 
 import numpy as np
 from satlynk.core.simulator import Simulator, SimConfig

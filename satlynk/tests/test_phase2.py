@@ -1,7 +1,6 @@
 """Phase 2 Integration Test — Eclipse + Multi-task + Weight Cache."""
 
 import sys
-sys.path.insert(0, '/workspace')
 
 import numpy as np
 from satlynk.core.simulator import Simulator, SimConfig
