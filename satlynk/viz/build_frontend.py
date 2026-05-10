@@ -549,17 +549,23 @@ function updateScene(t) {{
     }}
   }});
 
-  // Track mode: camera follows selected satellite from behind
+  // Track mode: only rotate camera horizontally to match satellite longitude
   if (cameraMode === 'track' && trackTarget >= 0) {{
-    const satPos = satMeshes[trackTarget].position.clone();
-    const dir = satPos.clone().normalize();
-    // Place camera behind + above the satellite (relative to earth center)
-    const camOffset = dir.clone().multiplyScalar(3.0);
-    const upOffset = new THREE.Vector3(0, 1.2, 0);
-    const targetCamPos = satPos.clone().add(camOffset).add(upOffset);
-    // Smooth lerp
-    camera.position.lerp(targetCamPos, 0.03);
-    camera.lookAt(satPos);
+    const satPos = satMeshes[trackTarget].position;
+    // Get satellite's azimuth angle (longitude around Y axis)
+    const satLon = Math.atan2(satPos.x, satPos.z);
+    
+    // Keep current distance and elevation, only rotate horizontally
+    const camY = camera.position.y;
+    const horizontalDist = Math.sqrt(camera.position.x * camera.position.x + camera.position.z * camera.position.z);
+    
+    const targetX = horizontalDist * Math.sin(satLon);
+    const targetZ = horizontalDist * Math.cos(satLon);
+    
+    // Smooth lerp horizontal position
+    camera.position.x += (targetX - camera.position.x) * 0.05;
+    camera.position.z += (targetZ - camera.position.z) * 0.05;
+    camera.lookAt(0, 0, 0);
   }}
 }}
 
