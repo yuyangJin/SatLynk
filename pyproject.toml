@@ -1,0 +1,37 @@
+[project]
+name = "oasis"
+version = "0.1.0"
+description = "Orbital Agent Scheduling & Inference Simulator"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.24",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov",
+]
+solver = [
+    "ortools>=9.6",
+]
+rl = [
+    "gymnasium>=0.29",
+    "stable-baselines3>=2.0",
+]
+orbit = [
+    "sgp4>=2.22",
+    "skyfield>=1.46",
+]
+viz = [
+    "matplotlib>=3.7",
+    "plotly>=5.15",
+]
+all = ["oasis[dev,solver,orbit,viz,rl]"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
