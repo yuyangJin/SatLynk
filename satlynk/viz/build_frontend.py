@@ -1,4 +1,4 @@
-"""Generate the SatLynk 3D visualization HTML file — v2 with texture earth + day/night."""
+"""Generate the SatLynk 3D visualization HTML file — v2."""
 
 import json
 import os
@@ -37,6 +37,9 @@ html, body {{ background: #0a0e1a; color: #e2e8f0; font-family: -apple-system, B
 #globe-mode {{ position: absolute; top: 40px; right: 8px; background: rgba(0,0,0,0.75); padding: 4px 6px; border-radius: 4px; font-size: 11px; z-index: 10; display: flex; gap: 2px; }}
 #globe-mode button {{ background: #1f2937; border: 1px solid #374151; color: #9ca3af; padding: 4px 10px; border-radius: 3px; cursor: pointer; font-size: 11px; }}
 #globe-mode button.active {{ background: #10b981; border-color: #10b981; color: #fff; }}
+#label-toggle {{ position: absolute; top: 72px; right: 8px; background: rgba(0,0,0,0.75); padding: 4px 6px; border-radius: 4px; font-size: 11px; z-index: 10; }}
+#label-toggle button {{ background: #1f2937; border: 1px solid #374151; color: #9ca3af; padding: 4px 10px; border-radius: 3px; cursor: pointer; font-size: 11px; }}
+#label-toggle button.active {{ background: #6366f1; border-color: #6366f1; color: #fff; }}
 
 #legend {{ position: absolute; bottom: 6px; left: 10px; background: rgba(0,0,0,0.75); padding: 4px 10px; border-radius: 4px; font-size: 10px; z-index: 10; pointer-events: none; display: flex; gap: 8px; flex-wrap: wrap; }}
 .legend-item {{ display: flex; align-items: center; gap: 3px; white-space: nowrap; }}
@@ -118,6 +121,9 @@ html, body {{ background: #0a0e1a; color: #e2e8f0; font-family: -apple-system, B
       <div id="globe-mode">
         <button class="active" data-mode="smooth">Smooth</button>
         <button data-mode="terrain">Terrain</button>
+      </div>
+      <div id="label-toggle">
+        <button class="active" id="label-btn">Labels</button>
       </div>
       <div id="legend">
         <span class="legend-item"><span class="legend-dot" style="background:#4299e1"></span>Detector</span>
@@ -332,6 +338,13 @@ document.querySelectorAll('#globe-mode button').forEach(btn => {{
   btn.addEventListener('click', () => setEarthMode(btn.dataset.mode));
 }});
 
+// Label toggle
+document.getElementById('label-btn').addEventListener('click', function() {{
+  labelsVisible = !labelsVisible;
+  this.classList.toggle('active', labelsVisible);
+  labelRenderer.domElement.style.display = labelsVisible ? 'block' : 'none';
+}});
+
 // Light
 scene.add(new THREE.AmbientLight(0x404060, 0.5));
 const sun = new THREE.DirectionalLight(0xffffff, 1.0);
@@ -349,6 +362,8 @@ scene.add(new THREE.Points(starsGeo, new THREE.PointsMaterial({{ color: 0xffffff
 const satMeshes = [];
 const orbitLines = [];
 const selectRings = []; // selection indicator rings
+const satLabels = []; // label div references
+let labelsVisible = true;
 
 SIM.satellites.forEach((sat, i) => {{
   const size = sat.role === 'relay' ? 0.18 : sat.role === 'compute' ? 0.14 : 0.12;
@@ -383,6 +398,7 @@ SIM.satellites.forEach((sat, i) => {{
   const label = new CSS2DObject(labelDiv);
   label.position.set(0, size * 2.5, 0);
   mesh.add(label);
+  satLabels.push(labelDiv);
   
   // Orbit path
   const pts = computeOrbitPath(sat.orbit, 80);
@@ -539,6 +555,13 @@ function updateScene(t) {{
     if (ring) {{
       ring.lookAt(camera.position.clone().sub(mesh.position));
       ring.material.opacity = (i === selectedSat) ? 0.6 + 0.2 * Math.sin(t * 4) : 0.0;
+    }}
+    // Label opacity: dim for satellites on far side of Earth
+    if (labelsVisible && satLabels[i]) {{
+      const camDir = camera.position.clone().normalize();
+      const satDir = mesh.position.clone().normalize();
+      const facing = camDir.dot(satDir); // >0 = same side as camera, <0 = back side
+      satLabels[i].style.opacity = facing > 0 ? '1.0' : '0.3';
     }}
   }});
 
