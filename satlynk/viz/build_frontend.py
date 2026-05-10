@@ -267,10 +267,10 @@ void main() {{
   
   // Lighting for day side
   float diffuse = max(NdotL, 0.0);
-  vec3 litDay = dayColor * (0.9 + 0.1 * diffuse);
+  vec3 litDay = dayColor;
   
   // Night side: city lights + slight ambient so it's not pure black
-  vec3 litNight = nightColor * 0.8 + vec3(0.01, 0.01, 0.02);
+  vec3 litNight = nightColor * 0.6;
   
   // Blend day and night
   vec3 col = mix(litNight, litDay, dayFactor);
