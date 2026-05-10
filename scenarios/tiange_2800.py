@@ -16,14 +16,14 @@ sys.path.insert(0, '/workspace')
 
 import numpy as np
 import time as walltime
-from oasis.core.simulator import Simulator, SimConfig
-from oasis.orbital.constellation import (
+from satlynk.core.simulator import Simulator, SimConfig
+from satlynk.orbital.constellation import (
     Satellite, Role, OrbitalElements, generate_walker_delta,
     propagate_positions,
 )
-from oasis.network.contact_plan import compute_contact_plan
-from oasis.task.dag import TaskDAG, SubTask
-from oasis.scheduler.interface import NearestFirstScheduler
+from satlynk.network.contact_plan import compute_contact_plan
+from satlynk.task.dag import TaskDAG, SubTask
+from satlynk.scheduler.interface import NearestFirstScheduler
 
 
 def create_full_constellation():

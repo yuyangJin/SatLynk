@@ -8,15 +8,15 @@ import sys, json, os
 sys.path.insert(0, '/workspace')
 
 import numpy as np
-from oasis.core.simulator import Simulator, SimConfig
-from oasis.orbital.constellation import (
+from satlynk.core.simulator import Simulator, SimConfig
+from satlynk.orbital.constellation import (
     Satellite, Role, OrbitalElements, generate_walker_delta,
     propagate_positions,
 )
-from oasis.network.contact_plan import compute_contact_plan, ContactPlan
-from oasis.task.dag import TaskDAG, SubTask
-from oasis.scheduler.interface import NearestFirstScheduler
-from oasis.viz.exporter import VizRecorder
+from satlynk.network.contact_plan import compute_contact_plan, ContactPlan
+from satlynk.task.dag import TaskDAG, SubTask
+from satlynk.scheduler.interface import NearestFirstScheduler
+from satlynk.viz.exporter import VizRecorder
 
 
 def build_tiange_viz():
@@ -165,7 +165,7 @@ def build_tiange_viz():
 
 
 def main():
-    from oasis.viz.build_frontend import generate_html
+    from satlynk.viz.build_frontend import generate_html
     
     export_path = build_tiange_viz()
     output_path = "/workspace/site/index.html"

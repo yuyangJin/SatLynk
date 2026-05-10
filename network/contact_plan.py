@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import List, Tuple, Optional
 from bisect import bisect_left, bisect_right
 
-from oasis.orbital.constellation import (
+from satlynk.orbital.constellation import (
     Satellite, propagate_positions, check_line_of_sight, R_EARTH_KM
 )
 

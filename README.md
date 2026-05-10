@@ -64,34 +64,34 @@ pip install numpy   # 唯一依赖
 
 ```bash
 # 天格 GRB 场景 — 3 探测星 + 4 计算星 (演示链路瓶颈)
-python -m oasis.scenarios.tiange_grb
+python -m satlynk.scenarios.tiange_grb
 
 # 2800 星全规模场景 (约 10s 完成)
-python -m oasis.scenarios.tiange_2800
+python -m satlynk.scenarios.tiange_2800
 
 # 基础 toy case — 3 星接力验证
-python -m oasis.scenarios.toy_case_pure
+python -m satlynk.scenarios.toy_case_pure
 ```
 
 ### 生成 3D 可视化
 
 ```bash
-python -m oasis.viz.generate_tiange
+python -m satlynk.viz.generate_tiange
 # 输出 → site/index.html，用浏览器打开即可
 ```
 
 ### 运行测试
 
 ```bash
-python -m oasis.tests.test_integration
-python -m oasis.tests.test_walker_5sat
-python -m oasis.tests.test_phase2
+python -m satlynk.tests.test_integration
+python -m satlynk.tests.test_walker_5sat
+python -m satlynk.tests.test_phase2
 ```
 
 ## Architecture
 
 ```
-oasis/
+satlynk/
 ├── core/
 │   ├── engine.py          # DES 事件引擎
 │   └── simulator.py       # 主仿真器（集成所有模块）

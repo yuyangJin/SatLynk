@@ -4,12 +4,12 @@ import sys
 sys.path.insert(0, '/workspace')
 
 import numpy as np
-from oasis.core.simulator import Simulator, SimConfig
-from oasis.core.engine import EventType
-from oasis.orbital.constellation import Satellite, Role, OrbitalElements
-from oasis.network.contact_plan import ContactPlan, ContactWindow
-from oasis.task.dag import TaskDAG, SubTask
-from oasis.scheduler.interface import NearestFirstScheduler
+from satlynk.core.simulator import Simulator, SimConfig
+from satlynk.core.engine import EventType
+from satlynk.orbital.constellation import Satellite, Role, OrbitalElements
+from satlynk.network.contact_plan import ContactPlan, ContactWindow
+from satlynk.task.dag import TaskDAG, SubTask
+from satlynk.scheduler.interface import NearestFirstScheduler
 
 
 def test_toy_case_full_sim():

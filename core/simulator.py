@@ -15,24 +15,24 @@ from typing import List, Dict, Optional, Callable, Tuple
 from enum import Enum
 import numpy as np
 
-from oasis.core.engine import DESEngine, Event, EventType
-from oasis.orbital.constellation import (
+from satlynk.core.engine import DESEngine, Event, EventType
+from satlynk.orbital.constellation import (
     Satellite, Role, propagate_positions, compute_distances,
     check_line_of_sight, generate_walker_delta,
 )
-from oasis.orbital.eclipse import compute_eclipse_schedule_vectorized
-from oasis.network.contact_plan import (
+from satlynk.orbital.eclipse import compute_eclipse_schedule_vectorized
+from satlynk.network.contact_plan import (
     ContactPlan, ContactWindow, compute_contact_plan,
 )
-from oasis.task.dag import TaskDAG, SubTask, TaskState, DataDependency
-from oasis.task.weight_cache import WeightCacheManager, EvictionPolicy
-from oasis.scheduler.interface import (
+from satlynk.task.dag import TaskDAG, SubTask, TaskState, DataDependency
+from satlynk.task.weight_cache import WeightCacheManager, EvictionPolicy
+from satlynk.scheduler.interface import (
     Scheduler, NearestFirstScheduler, Schedule, TaskAssignment,
     EnvSnapshot, NodeSnapshot,
 )
-from oasis.energy.battery import EnergyModel, PowerMode
-from oasis.metrics.collector import MetricsCollector, TaskResult, SimMetrics
-from oasis.viz.exporter import VizRecorder
+from satlynk.energy.battery import EnergyModel, PowerMode
+from satlynk.metrics.collector import MetricsCollector, TaskResult, SimMetrics
+from satlynk.viz.exporter import VizRecorder
 
 
 class TransferState(str, Enum):

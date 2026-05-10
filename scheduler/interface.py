@@ -6,8 +6,8 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Protocol, Dict, Any
 import numpy as np
 
-from oasis.task.dag import TaskDAG
-from oasis.network.contact_plan import ContactPlan, ContactWindow
+from satlynk.task.dag import TaskDAG
+from satlynk.network.contact_plan import ContactPlan, ContactWindow
 
 
 @dataclass

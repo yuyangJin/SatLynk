@@ -4,10 +4,10 @@ import sys
 sys.path.insert(0, '/workspace')
 
 import json
-from oasis.core.simulator import Simulator, SimConfig
-from oasis.orbital.constellation import Satellite, Role, OrbitalElements
-from oasis.network.contact_plan import ContactPlan, ContactWindow
-from oasis.task.dag import TaskDAG, SubTask
+from satlynk.core.simulator import Simulator, SimConfig
+from satlynk.orbital.constellation import Satellite, Role, OrbitalElements
+from satlynk.network.contact_plan import ContactPlan, ContactWindow
+from satlynk.task.dag import TaskDAG, SubTask
 
 
 def test_viz_export():

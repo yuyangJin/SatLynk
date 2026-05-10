@@ -100,7 +100,7 @@ class VizRecorder:
 
     def init_from_simulator(self, sim) -> None:
         """Initialize recorder from a configured Simulator instance."""
-        from oasis.orbital.constellation import Role
+        from satlynk.orbital.constellation import Role
 
         self.scenario_name = "oasis_simulation"
         self.duration_s = sim.config.duration_s

@@ -25,9 +25,9 @@ import numpy as np
 from dataclasses import dataclass
 from typing import List, Tuple
 
-from oasis.core.engine import DESEngine, Event, EventType
-from oasis.network.contact_plan import ContactPlan, ContactWindow
-from oasis.task.dag import TaskDAG, SubTask, DataDependency
+from satlynk.core.engine import DESEngine, Event, EventType
+from satlynk.network.contact_plan import ContactPlan, ContactWindow
+from satlynk.task.dag import TaskDAG, SubTask, DataDependency
 
 
 def create_toy_contact_plan() -> ContactPlan:

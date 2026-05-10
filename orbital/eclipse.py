@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import numpy as np
 from typing import List, Tuple
-from oasis.orbital.constellation import R_EARTH_KM
+from satlynk.orbital.constellation import R_EARTH_KM
 
 
 def compute_sun_direction(t_s: float, epoch_jd_offset: float = 0.0) -> np.ndarray:

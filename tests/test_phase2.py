@@ -4,10 +4,10 @@ import sys
 sys.path.insert(0, '/workspace')
 
 import numpy as np
-from oasis.core.simulator import Simulator, SimConfig
-from oasis.orbital.constellation import Satellite, Role, OrbitalElements, generate_walker_delta
-from oasis.task.dag import TaskDAG, SubTask
-from oasis.scheduler.interface import NearestFirstScheduler
+from satlynk.core.simulator import Simulator, SimConfig
+from satlynk.orbital.constellation import Satellite, Role, OrbitalElements, generate_walker_delta
+from satlynk.task.dag import TaskDAG, SubTask
+from satlynk.scheduler.interface import NearestFirstScheduler
 
 
 def test_phase2():
