@@ -1,4 +1,4 @@
-"""Generate the SatLynk 3D visualization HTML file — v2 with raycaster + terrain globe."""
+"""Generate the SatLynk 3D visualization HTML file — v2 with texture earth + day/night."""
 
 import json
 import os
@@ -217,6 +217,11 @@ window.addEventListener('resize', resize);
 setTimeout(resize, 100);
 
 // ============ EARTH RENDERING ============
+const textureLoader = new THREE.TextureLoader();
+const earthDayTex = textureLoader.load('https://unpkg.com/three-globe@2.31.1/example/img/earth-blue-marble.jpg');
+const earthNightTex = textureLoader.load('https://unpkg.com/three-globe@2.31.1/example/img/earth-night.jpg');
+earthDayTex.colorSpace = THREE.SRGBColorSpace;
+earthNightTex.colorSpace = THREE.SRGBColorSpace;
 
 // --- Smooth Earth (default) ---
 const earthGeo = new THREE.SphereGeometry(R, 48, 48);
@@ -228,7 +233,7 @@ const wireGeo = new THREE.SphereGeometry(R * 1.002, 32, 32);
 const earthWire = new THREE.Mesh(wireGeo, new THREE.MeshBasicMaterial({{ color: 0x2d3748, wireframe: true, transparent: true, opacity: 0.12 }}));
 scene.add(earthWire);
 
-// --- Terrain Earth (procedural shader) ---
+// --- Terrain Earth (real texture + day/night shader) ---
 const terrainVertShader = `
 varying vec3 vNormal;
 varying vec3 vPosition;
@@ -241,142 +246,64 @@ void main() {{
 }}`;
 
 const terrainFragShader = `
+uniform sampler2D uDayMap;
+uniform sampler2D uNightMap;
+uniform vec3 uSunDir;
 varying vec3 vNormal;
 varying vec3 vPosition;
 varying vec2 vUv;
-uniform vec3 uSunDir;
-
-// Simplex noise helpers
-vec3 mod289(vec3 x) {{ return x - floor(x * (1.0/289.0)) * 289.0; }}
-vec4 mod289(vec4 x) {{ return x - floor(x * (1.0/289.0)) * 289.0; }}
-vec4 permute(vec4 x) {{ return mod289(((x*34.0)+1.0)*x); }}
-vec4 taylorInvSqrt(vec4 r) {{ return 1.79284291400159 - 0.85373472095314 * r; }}
-
-float snoise(vec3 v) {{
-  const vec2 C = vec2(1.0/6.0, 1.0/3.0);
-  const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
-  vec3 i = floor(v + dot(v, C.yyy));
-  vec3 x0 = v - i + dot(i, C.xxx);
-  vec3 g = step(x0.yzx, x0.xyz);
-  vec3 l = 1.0 - g;
-  vec3 i1 = min(g.xyz, l.zxy);
-  vec3 i2 = max(g.xyz, l.zxy);
-  vec3 x1 = x0 - i1 + C.xxx;
-  vec3 x2 = x0 - i2 + C.yyy;
-  vec3 x3 = x0 - D.yyy;
-  i = mod289(i);
-  vec4 p = permute(permute(permute(
-    i.z + vec4(0.0, i1.z, i2.z, 1.0))
-    + i.y + vec4(0.0, i1.y, i2.y, 1.0))
-    + i.x + vec4(0.0, i1.x, i2.x, 1.0));
-  float n_ = 0.142857142857;
-  vec3 ns = n_ * D.wyz - D.xzx;
-  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
-  vec4 x_ = floor(j * ns.z);
-  vec4 y_ = floor(j - 7.0 * x_);
-  vec4 x = x_ * ns.x + ns.yyyy;
-  vec4 y = y_ * ns.x + ns.yyyy;
-  vec4 h = 1.0 - abs(x) - abs(y);
-  vec4 b0 = vec4(x.xy, y.xy);
-  vec4 b1 = vec4(x.zw, y.zw);
-  vec4 s0 = floor(b0)*2.0 + 1.0;
-  vec4 s1 = floor(b1)*2.0 + 1.0;
-  vec4 sh = -step(h, vec4(0.0));
-  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
-  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
-  vec3 p0 = vec3(a0.xy, h.x);
-  vec3 p1 = vec3(a0.zw, h.y);
-  vec3 p2 = vec3(a1.xy, h.z);
-  vec3 p3 = vec3(a1.zw, h.w);
-  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
-  p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
-  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
-  m = m * m;
-  return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
-}}
-
-float fbm(vec3 p) {{
-  float v = 0.0;
-  float a = 0.5;
-  for (int i = 0; i < 5; i++) {{
-    v += a * snoise(p);
-    p *= 2.0;
-    a *= 0.5;
-  }}
-  return v;
-}}
 
 void main() {{
-  // Convert position to spherical for noise
+  vec3 normal = normalize(vNormal);
+  vec3 sunDir = normalize(uSunDir);
+  
+  // Day/night factor based on dot(normal, sunDir)
+  float NdotL = dot(normal, sunDir);
+  // Smooth terminator: transition over [-0.1, 0.2] range
+  float dayFactor = smoothstep(-0.1, 0.2, NdotL);
+  
+  // Sample textures
+  vec3 dayColor = texture2D(uDayMap, vUv).rgb;
+  vec3 nightColor = texture2D(uNightMap, vUv).rgb;
+  
+  // Lighting for day side
+  float diffuse = max(NdotL, 0.0);
+  vec3 litDay = dayColor * (0.3 + 0.7 * diffuse);
+  
+  // Night side: show city lights, slightly dimmed
+  vec3 litNight = nightColor * 1.2;
+  
+  // Blend day and night
+  vec3 col = mix(litNight, litDay, dayFactor);
+  
+  // Latitude/longitude grid lines
   vec3 dir = normalize(vPosition);
   float lat = asin(dir.y);
   float lon = atan(dir.z, dir.x);
+  float latLine = 1.0 - smoothstep(0.0, 0.012, abs(fract(lat / (3.14159/6.0) + 0.5) - 0.5));
+  float lonLine = 1.0 - smoothstep(0.0, 0.012, abs(fract(lon / (3.14159/6.0) + 0.5) - 0.5));
+  float eqLine = 1.0 - smoothstep(0.0, 0.02, abs(lat));
+  float pmLine = 1.0 - smoothstep(0.0, 0.02, abs(lon));
+  float gridAlpha = max(max(latLine, lonLine) * 0.2, max(eqLine, pmLine) * 0.35);
+  col = mix(col, vec3(0.7, 0.8, 0.9), gridAlpha);
   
-  // Noise-based elevation
-  float elev = fbm(dir * 3.0 + vec3(0.5, 1.2, 0.8));
-  
-  // Color based on elevation
-  vec3 deepOcean = vec3(0.05, 0.12, 0.28);
-  vec3 shallowOcean = vec3(0.08, 0.22, 0.45);
-  vec3 coast = vec3(0.12, 0.35, 0.18);
-  vec3 land = vec3(0.15, 0.42, 0.12);
-  vec3 highland = vec3(0.35, 0.32, 0.18);
-  vec3 mountain = vec3(0.55, 0.52, 0.48);
-  vec3 snow = vec3(0.85, 0.88, 0.92);
-  
-  vec3 col;
-  if (elev < -0.05) {{
-    col = mix(deepOcean, shallowOcean, smoothstep(-0.4, -0.05, elev));
-  }} else if (elev < 0.05) {{
-    col = mix(shallowOcean, coast, smoothstep(-0.05, 0.05, elev));
-  }} else if (elev < 0.2) {{
-    col = mix(coast, land, smoothstep(0.05, 0.2, elev));
-  }} else if (elev < 0.35) {{
-    col = mix(land, highland, smoothstep(0.2, 0.35, elev));
-  }} else if (elev < 0.5) {{
-    col = mix(highland, mountain, smoothstep(0.35, 0.5, elev));
-  }} else {{
-    col = mix(mountain, snow, smoothstep(0.5, 0.7, elev));
-  }}
-  
-  // Latitude-based polar ice
-  float polarFactor = smoothstep(1.1, 1.4, abs(lat * 2.0));
-  col = mix(col, snow * 0.9, polarFactor);
-  
-  // Simple lighting
-  float diffuse = max(dot(vNormal, normalize(uSunDir)), 0.0);
-  float ambient = 0.25;
-  col *= (ambient + diffuse * 0.75);
-  
-  // Latitude/longitude grid lines
-  float latLine = 1.0 - smoothstep(0.0, 0.015, abs(fract(lat / (3.14159/6.0) + 0.5) - 0.5));
-  float lonLine = 1.0 - smoothstep(0.0, 0.015, abs(fract(lon / (3.14159/6.0) + 0.5) - 0.5));
-  // Equator and prime meridian thicker
-  float eqLine = 1.0 - smoothstep(0.0, 0.025, abs(lat));
-  float pmLine = 1.0 - smoothstep(0.0, 0.025, abs(lon));
-  
-  float gridAlpha = max(max(latLine, lonLine) * 0.25, max(eqLine, pmLine) * 0.4);
-  col = mix(col, vec3(0.6, 0.7, 0.8), gridAlpha);
-  
-  gl_FragColor = vec4(col, 0.95);
+  gl_FragColor = vec4(col, 1.0);
 }}`;
 
 const terrainMat = new THREE.ShaderMaterial({{
   vertexShader: terrainVertShader,
   fragmentShader: terrainFragShader,
-  uniforms: {{ uSunDir: {{ value: new THREE.Vector3(10, 5, 10).normalize() }} }},
-  transparent: true
+  uniforms: {{
+    uDayMap: {{ value: earthDayTex }},
+    uNightMap: {{ value: earthNightTex }},
+    uSunDir: {{ value: new THREE.Vector3(1, 0.3, 0.5).normalize() }}
+  }}
 }});
 const earthTerrain = new THREE.Mesh(new THREE.SphereGeometry(R, 64, 64), terrainMat);
 earthTerrain.visible = false;
 scene.add(earthTerrain);
 
-// Lat/lon grid lines (3D lines for smooth mode — hidden by default)
-const gridGroup = new THREE.Group();
-gridGroup.visible = false;
-scene.add(gridGroup);
-
-// Equator ring
+// Equator ring (smooth mode only)
 const eqGeo = new THREE.RingGeometry(R * 1.003, R * 1.005, 64);
 const eqMesh = new THREE.Mesh(eqGeo, new THREE.MeshBasicMaterial({{ color: 0x4a5568, side: THREE.DoubleSide, transparent: true, opacity: 0.25 }}));
 eqMesh.rotation.x = Math.PI / 2;
@@ -574,6 +501,12 @@ function getSatPos(idx, t) {{
 }}
 
 function updateScene(t) {{
+  // Update sun direction (simulate Earth rotation ~1 rev per orbit period ~5400s)
+  const sunAngle = (t / duration) * Math.PI * 2;
+  const sunDir = new THREE.Vector3(Math.cos(sunAngle), 0.3, Math.sin(sunAngle)).normalize();
+  terrainMat.uniforms.uSunDir.value.copy(sunDir);
+  sun.position.copy(sunDir.clone().multiplyScalar(20));
+
   satMeshes.forEach((mesh, i) => {{
     mesh.position.copy(getSatPos(i, t));
     const computing = SIM.compute_jobs.some(j => j.node === i && t >= j.start && t <= j.end);
