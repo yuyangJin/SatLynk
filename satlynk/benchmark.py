@@ -24,6 +24,7 @@ from satlynk.scheduler.interface import NearestFirstScheduler, Scheduler
 from satlynk.scheduler.heuristics import (
     RandomScheduler, ShortestPathScheduler, CGR_EDF_Scheduler,
 )
+from satlynk.scheduler.teg_scheduler import TEGScheduler
 from satlynk.metrics.collector import SimMetrics
 
 
@@ -239,6 +240,17 @@ def get_all_schedulers(contact_plan=None, satellites=None,
         'CGR+EDF': CGR_EDF_Scheduler(data_rate_bps=data_rate_bps, max_hops=3),
     }
     
+    # TEG scheduler — uses time-expanded graph for optimal routing
+    if contact_plan and satellites:
+        teg_sched = TEGScheduler(
+            contact_plan=contact_plan,
+            satellites=satellites,
+            data_rate_bps=data_rate_bps,
+            time_horizon_s=time_horizon_s,
+            teg_dt_s=10.0,
+        )
+        schedulers['TEG'] = teg_sched
+
     # Oracle — exhaustive search (no external deps, feasible for ≤20 sats)
     if contact_plan and satellites and tasks and len(satellites) <= 20:
         from satlynk.scheduler.oracle import OracleScheduler
