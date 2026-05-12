@@ -58,6 +58,8 @@ class Transfer:
     subtask_id: str = ""  # which subtask triggered this
     purpose: str = ""     # "input" / "result" / "relay" / "weight"
     start_time: float = -1.0
+    route: List[int] = field(default_factory=list)  # remaining hops after dst_node
+    final_purpose: str = ""  # original purpose for last hop
 
 
 @dataclass
@@ -463,6 +465,30 @@ class Simulator:
             # Input data arrived at compute node — check if subtask can start
             self._try_start_compute(transfer.subtask_id, transfer.task_id, t)
 
+        elif transfer.purpose == "relay_fwd":
+            # Intermediate hop completed — forward to next node in route
+            remaining = transfer.route
+            if remaining:
+                next_dst = remaining[0]
+                new_route = remaining[1:]
+                self._start_transfer(
+                    src=transfer.dst_node,
+                    dst=next_dst,
+                    size_bytes=transfer.size_bytes,
+                    task_id=transfer.task_id,
+                    subtask_id=transfer.subtask_id,
+                    purpose=transfer.final_purpose if not new_route else "relay_fwd",
+                    t=t,
+                    route=new_route,
+                    final_purpose=transfer.final_purpose,
+                )
+            else:
+                # No more hops, treat as final purpose
+                if transfer.final_purpose == "input":
+                    self._try_start_compute(transfer.subtask_id, transfer.task_id, t)
+                elif transfer.final_purpose in ("result_direct", "result"):
+                    self._complete_task(transfer.task_id, t)
+
         elif transfer.purpose == "weight":
             # Model weight arrived — cache it and retry compute
             task = self._tasks[transfer.task_id]
@@ -521,19 +547,21 @@ class Simulator:
                 # Result already at destination
                 self._complete_task(task_id, t)
             else:
-                # Need to transfer result back
-                # Check if direct link available
-                direct_window = self.contact_plan.get_window(compute_node, dest, t)
-                if direct_window and direct_window.is_active(t):
-                    # Direct return
+                # Need to transfer result back — try relay route (active now)
+                route = self._find_relay_route(compute_node, dest, t)
+                if route:
+                    first_hop = route[0]
+                    remaining = route[1:] + [dest]
                     self._start_transfer(
-                        src=compute_node, dst=dest,
+                        src=compute_node, dst=first_hop,
                         size_bytes=task.result_size_bytes,
                         task_id=task_id, subtask_id=subtask_id,
-                        purpose="result_direct", t=t,
+                        purpose="relay_fwd", t=t,
+                        route=remaining,
+                        final_purpose="result_direct",
                     )
                 else:
-                    # Need relay — find reachable intermediate node
+                    # No fully-active relay route — try old relay logic (1-hop with future window)
                     relay_node = self._find_relay(compute_node, dest, t)
                     if relay_node is not None:
                         self._start_transfer(
@@ -543,7 +571,7 @@ class Simulator:
                             purpose="relay", t=t,
                         )
                     else:
-                        # No path now — queue for later (transfer will stall until link up)
+                        # Direct transfer (will queue if link not active)
                         self._start_transfer(
                             src=compute_node, dst=dest,
                             size_bytes=task.result_size_bytes,
@@ -569,12 +597,27 @@ class Simulator:
                 # Entry task — need to send input from source to compute node
                 input_size = getattr(task, 'input_size_bytes', 0)
                 if input_size > 0:
-                    self._start_transfer(
-                        src=task.source_node, dst=node_id,
-                        size_bytes=input_size,
-                        task_id=task.id, subtask_id=st_id,
-                        purpose="input", t=t,
-                    )
+                    # Check if direct link exists; if not, find relay path
+                    route = self._find_relay_route(task.source_node, node_id, t)
+                    if route:
+                        # Multi-hop: src → route[0] → route[1] → ... → dst
+                        first_hop = route[0]
+                        remaining = route[1:] + [node_id]
+                        self._start_transfer(
+                            src=task.source_node, dst=first_hop,
+                            size_bytes=input_size,
+                            task_id=task.id, subtask_id=st_id,
+                            purpose="relay_fwd", t=t,
+                            route=remaining,
+                            final_purpose="input",
+                        )
+                    else:
+                        self._start_transfer(
+                            src=task.source_node, dst=node_id,
+                            size_bytes=input_size,
+                            task_id=task.id, subtask_id=st_id,
+                            purpose="input", t=t,
+                        )
                 else:
                     self._try_start_compute(st_id, task.id, t)
             elif not predecessors and task.source_node == node_id:
@@ -583,14 +626,29 @@ class Simulator:
             # Tasks with predecessors will be triggered by _on_compute_done
 
     def _start_transfer(self, src: int, dst: int, size_bytes: int,
-                        task_id: str, subtask_id: str, purpose: str, t: float):
-        """Initiate a data transfer."""
-        tid = f"xfer_{task_id}_{subtask_id}_{purpose}_{t:.1f}"
+                        task_id: str, subtask_id: str, purpose: str, t: float,
+                        route: List[int] = None, final_purpose: str = ""):
+        """Initiate a data transfer, optionally via multi-hop route.
+        
+        If route is provided, the transfer goes src → dst → route[0] → route[1] → ...
+        Each hop is a separate transfer; on completion of each hop, the next is started.
+        """
+        # If route provided and dst is not the final destination, mark as relay hop
+        if route and len(route) > 0:
+            actual_purpose = "relay_fwd"
+            remaining_route = route
+        else:
+            actual_purpose = purpose
+            remaining_route = []
+
+        tid = f"xfer_{task_id}_{subtask_id}_{actual_purpose}_{t:.1f}_{src}_{dst}"
         transfer = Transfer(
             id=tid, src_node=src, dst_node=dst,
             size_bytes=size_bytes,
             task_id=task_id, subtask_id=subtask_id,
-            purpose=purpose,
+            purpose=actual_purpose,
+            route=remaining_route,
+            final_purpose=final_purpose or purpose,
         )
 
         # Check if link is currently available
@@ -720,6 +778,70 @@ class Simulator:
             self.viz.record_event(t, "task_complete",
                                   f"{task_id} done (makespan={result.makespan_s:.1f}s)",
                                   node=task.source_node)
+
+    def _find_relay_route(self, src: int, dst: int, t: float) -> List[int]:
+        """Find a relay path from src to dst if no direct link exists.
+        
+        Returns list of intermediate nodes (excluding src and dst), or empty list
+        if direct link exists or no relay path found.
+        """
+        # Check direct link first
+        direct = self.contact_plan.get_window(src, dst, t)
+        if direct and direct.is_active(t):
+            return []  # Direct link works, no relay needed
+        
+        # BFS for 1-hop relay: src → relay → dst
+        for w1 in self.contact_plan.windows:
+            if not (w1.start_s <= t <= w1.end_s):
+                continue
+            # Find links from src
+            if w1.src == src:
+                relay = w1.dst
+            elif w1.dst == src:
+                relay = w1.src
+            else:
+                continue
+            
+            if relay == dst:
+                return []  # Actually direct
+            
+            # Check relay → dst
+            w2 = self.contact_plan.get_window(relay, dst, t)
+            if w2 and w2.is_active(t):
+                return [relay]
+        
+        # 2-hop relay: src → r1 → r2 → dst
+        for w1 in self.contact_plan.windows:
+            if not (w1.start_s <= t <= w1.end_s):
+                continue
+            if w1.src == src:
+                r1 = w1.dst
+            elif w1.dst == src:
+                r1 = w1.src
+            else:
+                continue
+            if r1 == dst:
+                continue
+            
+            for w2 in self.contact_plan.windows:
+                if not (w2.start_s <= t <= w2.end_s):
+                    continue
+                if w2.src == r1:
+                    r2 = w2.dst
+                elif w2.dst == r1:
+                    r2 = w2.src
+                else:
+                    continue
+                if r2 == src or r2 == r1:
+                    continue
+                if r2 == dst:
+                    return [r1]  # Actually 1-hop through r1
+                
+                w3 = self.contact_plan.get_window(r2, dst, t)
+                if w3 and w3.is_active(t):
+                    return [r1, r2]
+        
+        return []  # No relay path found
 
     def _make_env_snapshot(self, t: float) -> EnvSnapshot:
         """Create environment snapshot for the scheduler."""
