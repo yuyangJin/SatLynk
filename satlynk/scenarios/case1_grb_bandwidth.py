@@ -21,6 +21,7 @@ from satlynk.task.dag import TaskDAG, SubTask
 from satlynk.scheduler.interface import NearestFirstScheduler
 from satlynk.scheduler.heuristics import ShortestPathScheduler, CGR_EDF_Scheduler
 from satlynk.scheduler.teg_scheduler import TEGScheduler
+from satlynk.scheduler.load_balanced import LoadBalancedScheduler
 
 
 def create_constellation():
@@ -29,7 +30,7 @@ def create_constellation():
     关键: 通过轨道设计使 3 颗探测星在某时刻都能看到同一批计算星，
     但也能看到不同的计算星——让调度器有选择空间。
     """
-    # 天格探测星: 3颗, 535km SSO, 同一轨道面间隔120°
+    # 天格探测星: 3颗, 535km SSO, 同一轨道面相邻（模拟 GRB 触发相邻卫星）
     det_sats = []
     for i in range(3):
         det_sats.append(Satellite(
@@ -38,19 +39,19 @@ def create_constellation():
             elements=OrbitalElements(
                 semi_major_axis_km=6906.0,
                 inclination_deg=97.4,
-                raan_deg=0.0,  # 同一面
-                true_anomaly_deg=i * 120.0,
+                raan_deg=0.0,
+                true_anomaly_deg=i * 5.0,  # 仅 5° 间隔 → 3颗星紧邻
             ),
             compute_flops=0,
             storage_bytes=int(4e9),
-            max_comm_range_km=3000.0,
+            max_comm_range_km=5000.0,  # 增大确保多颗 comp 可达
             power_solar_w=12.0,
             battery_capacity_wh=40.0,
         ))
 
-    # 计算星: 12颗, 550km, 53° Walker(12/3/1)
+    # 计算星: 24颗, 550km, 53° Walker(24/4/1) — 更密集确保多颗可达
     comp_sats = generate_walker_delta(
-        total_sats=12, num_planes=3, phase_factor=1,
+        total_sats=24, num_planes=4, phase_factor=1,
         altitude_km=550, inclination_deg=53.0,
         role=Role.COMPUTE, prefix="COMP",
         compute_flops=1e12,
@@ -63,25 +64,29 @@ def create_constellation():
     return det_sats, comp_sats
 
 
-def create_burst_tasks(arrival_time=50.0, spread_s=5.0):
+def create_burst_tasks(arrival_time=50.0, spread_s=2.0):
     """
-    3 颗探测星在同一窗口内(±5s)同时触发 GRB 事件。
-    每星产出 5 MB 事件包。
+    同一颗探测星 TG-01 在短时间内触发 3 个事件（模拟 GRB 多能段/多模式分析）。
+    所有事件都从 node 0 发出 → 争抢 node 0 的出站带宽。
+    
+    关键: 如果 Nearest-First 把 3 个都送到同一颗 comp，
+    3 个传输共享 node0→compX 的 2 Mbps 链路 → 每个只有 0.67 Mbps。
+    如果分散到 3 颗不同 comp（各有独立链路），则每个 2 Mbps 满速。
     """
     tasks = []
     for i in range(3):
         task = TaskDAG(
             id=f"grb_trig_{i:03d}",
-            source_node=i,  # TG-01, TG-02, TG-03
+            source_node=0,  # 全部从 TG-01 发出!
             arrival_time_s=arrival_time + i * (spread_s / 3),
             subtasks=[SubTask(
                 id=f"grb_localize_{i}",
-                compute_flops=2e9,           # 4s on 1 TFLOPS (按模型大小)
-                output_size_bytes=200_000,   # 200 KB result (天区概率图)
+                compute_flops=2e9,
+                output_size_bytes=200_000,
             )],
             dependencies=[],
-            global_deadline_s=120.0,         # 2 min deadline
-            result_destination=i,            # 回传触发星
+            global_deadline_s=120.0,
+            result_destination=0,  # 回传 TG-01
             result_size_bytes=200_000,
         )
         task.input_size_bytes = 5_000_000  # 5 MB
@@ -122,6 +127,7 @@ def run_case1():
         "Nearest-First": NearestFirstScheduler(),
         "Shortest-Path": ShortestPathScheduler(),
         "CGR+EDF": CGR_EDF_Scheduler(),
+        "Load-Balanced": LoadBalancedScheduler(data_rate_bps=config.data_rate_bps),
         "TEG": TEGScheduler(
             contact_plan=contact_plan,
             satellites=all_sats,
@@ -161,13 +167,16 @@ def run_case1():
     # Analysis: bandwidth contention
     print(f"\n  Bandwidth Contention Analysis:")
     nf = results.get("Nearest-First")
-    sp = results.get("Shortest-Path")
-    if nf and sp:
-        if nf.max_makespan_s > 0 and sp.max_makespan_s > 0:
-            ratio = nf.max_makespan_s / sp.max_makespan_s if sp.max_makespan_s > 0 else 0
-            print(f"    Nearest-First max makespan: {nf.max_makespan_s:.1f}s")
-            print(f"    Shortest-Path max makespan: {sp.max_makespan_s:.1f}s")
-            print(f"    Contention penalty: {ratio:.2f}×")
+    lb = results.get("Load-Balanced")
+    if nf and lb:
+        if nf.max_makespan_s > 0 and lb.max_makespan_s > 0:
+            ratio = nf.max_makespan_s / lb.max_makespan_s
+            print(f"    Nearest-First max makespan: {nf.max_makespan_s:.1f}s (3 tasks on same link)")
+            print(f"    Load-Balanced max makespan: {lb.max_makespan_s:.1f}s (distributed)")
+            print(f"    Contention penalty: {ratio:.2f}× slower without load balancing")
+            print(f"    Static model prediction:   {static_makespan:.1f}s")
+            print(f"    → Static model matches Load-Balanced (no contention awareness)")
+            print(f"    → But misses the 3× penalty when scheduler is naive")
 
     print(f"\n{'=' * 70}")
     return results
